@@ -1,9 +1,22 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User, Session } from '@supabase/supabase-js'
-import { supabase, auth, db } from '@/lib/supabase'
 import { Profile } from '@/types/database'
+
+// Simplified user type for client-side use
+interface User {
+  id: string
+  email: string
+  user_metadata?: {
+    full_name?: string
+  }
+}
+
+interface Session {
+  user: User
+  access_token: string
+  refresh_token: string
+}
 
 interface AuthContextType {
   user: User | null
@@ -22,107 +35,108 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Start with false since we're not implementing auth yet
 
   useEffect(() => {
-    // Get initial session
-    auth.getSession().then(({ session }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        loadProfile(session.user.id)
-      } else {
-        setLoading(false)
-      }
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: any, session: any) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          await loadProfile(session.user.id)
-        } else {
-          setProfile(null)
-          setLoading(false)
-        }
-      }
-    )
-
-    return () => subscription.unsubscribe()
+    // TODO: Implement proper authentication
+    // For now, we'll just set loading to false
+    setLoading(false)
   }, [])
 
-  const loadProfile = async (userId: string) => {
+  const signIn = async (email: string, password: string) => {
+    setLoading(true)
     try {
-      const { data: profile, error } = await db.getProfile(userId)
-      if (error) {
-        console.error('Error loading profile:', error)
-        // If profile doesn't exist, create one
-        if (error.code === 'PGRST116') {
-          await createProfile(userId)
-        }
-      } else {
-        setProfile(profile)
+      // TODO: Implement proper authentication with server-side API
+      console.log('Sign in not implemented yet - using placeholder')
+      
+      // Placeholder response
+      const mockUser: User = {
+        id: '00000000-0000-0000-0000-000000000001',
+        email: email,
+        user_metadata: { full_name: 'Test User' }
       }
+      
+      const mockSession: Session = {
+        user: mockUser,
+        access_token: 'mock_token',
+        refresh_token: 'mock_refresh_token'
+      }
+      
+      setUser(mockUser)
+      setSession(mockSession)
+      
+      // Mock profile for admin user
+      if (email === 'admin@schiedam.app') {
+        const mockProfile: Profile = {
+          id: '00000000-0000-0000-0000-000000000001',
+          role: 'admin',
+          email: email,
+          full_name: 'Schiedam Admin',
+          avatar_url: null,
+          stripe_customer_id: null,
+          mollie_customer_id: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        setProfile(mockProfile)
+      }
+      
+      return { data: { user: mockUser, session: mockSession }, error: null }
     } catch (error) {
-      console.error('Error loading profile:', error)
+      console.error('Sign in error:', error)
+      return { data: null, error }
     } finally {
       setLoading(false)
     }
   }
 
-  const createProfile = async (userId: string) => {
-    const user = await auth.getCurrentUser()
-    if (user.user) {
-      const { data, error } = await db.createProfile({
-        id: userId,
-        email: user.user.email!,
-        role: 'bezoeker',
-        full_name: user.user.user_metadata?.full_name || null
-      })
-
-      if (!error && data) {
-        setProfile(data)
-      }
-    }
-  }
-
-  const signIn = async (email: string, password: string) => {
-    setLoading(true)
-    const result = await auth.signIn(email, password)
-    return result
-  }
-
   const signUp = async (email: string, password: string, userData?: any) => {
     setLoading(true)
-    const result = await auth.signUp(email, password, userData)
-    return result
+    try {
+      // TODO: Implement proper authentication with server-side API
+      console.log('Sign up not implemented yet - using placeholder')
+      return { data: null, error: { message: 'Sign up not implemented' } }
+    } catch (error) {
+      console.error('Sign up error:', error)
+      return { data: null, error }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const signOut = async () => {
     setLoading(true)
-    await auth.signOut()
-    setUser(null)
-    setProfile(null)
-    setSession(null)
-    setLoading(false)
+    try {
+      // TODO: Implement proper sign out
+      console.log('Sign out not implemented yet - using placeholder')
+      setUser(null)
+      setProfile(null)
+      setSession(null)
+    } catch (error) {
+      console.error('Sign out error:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: 'No user logged in' }
     
-    const { data, error } = await db.updateProfile(user.id, {
-      ...updates,
-      updated_at: new Date().toISOString()
-    })
-    
-    if (!error && data) {
-      setProfile(data)
+    try {
+      // TODO: Implement proper profile updates with server-side API
+      console.log('Update profile not implemented yet - using placeholder')
+      
+      if (profile) {
+        const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() }
+        setProfile(updatedProfile)
+        return { data: updatedProfile, error: null }
+      }
+      
+      return { data: null, error: { message: 'No profile found' } }
+    } catch (error) {
+      console.error('Update profile error:', error)
+      return { data: null, error }
     }
-    
-    return { data, error }
   }
 
   const value = {
